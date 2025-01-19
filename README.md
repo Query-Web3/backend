@@ -5,8 +5,8 @@ QueryWeb3 后端服务是一个基于 FastAPI 的区块链数据查询服务，�
 ## 项目环境
 
 ### 系统要求
-- Python 3.10+
-- PostgreSQL 13+
+- Python 3.10
+- MySQL 8.0+
 - Redis 6+
 - Docker (可选)
 
@@ -16,7 +16,7 @@ QueryWeb3 后端服务是一个基于 FastAPI 的区块链数据查询服务，�
 fastapi==0.104.1
 uvicorn==0.24.0
 sqlalchemy==2.0.23
-psycopg2-binary==2.9.9
+pymysql==1.1.0
 python-dotenv==1.0.0
 pydantic==2.5.2
 aiohttp==3.9.1
@@ -97,7 +97,7 @@ cp .env.example .env
 ```
 编辑 `.env` 文件，设置必要的环境变量：
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/queryweb3
+DATABASE_URL=mysql+pymysql://user:password@localhost:3306/queryweb3
 REDIS_URL=redis://localhost:6379/0
 API_KEY=your_api_key
 BLOCKCHAIN_RPC_URLS={"ethereum":"https://eth-mainnet.alchemyapi.io/v2/your-key"}
