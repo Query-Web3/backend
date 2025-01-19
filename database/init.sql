@@ -9,8 +9,7 @@ CREATE TABLE IF NOT EXISTS chains (
     name VARCHAR(50) NOT NULL COMMENT '网络名称，如 Ethereum、BSC等',
     chain_id INT NOT NULL COMMENT '链ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_chain_id (chain_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT '区块链网络信息表';
 
 -- 2. 资产类型表
@@ -40,8 +39,6 @@ CREATE TABLE IF NOT EXISTS tokens (
     asset_type_id INT NOT NULL COMMENT '资产类型ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (chain_id) REFERENCES chains(id),
-    FOREIGN KEY (asset_type_id) REFERENCES asset_types(id),
     UNIQUE KEY unique_token (chain_id, address)
 ) COMMENT '代币基础信息表';
 
@@ -58,7 +55,6 @@ CREATE TABLE IF NOT EXISTS token_daily_stats (
     volume_qoq DECIMAL(10,2) DEFAULT NULL COMMENT '交易量环比增长率(%)',
     txns_yoy DECIMAL(10,2) DEFAULT NULL COMMENT '交易数同比增长率(%)',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (token_id) REFERENCES tokens(id),
     UNIQUE KEY unique_daily_stats (token_id, date)
 ) COMMENT '代币每日统计数据表';
 
@@ -73,8 +69,6 @@ CREATE TABLE IF NOT EXISTS yield_stats (
     tvl DECIMAL(36,18) NOT NULL COMMENT '总锁仓量',
     tvl_usd DECIMAL(36,18) NOT NULL COMMENT 'USD总锁仓量',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (token_id) REFERENCES tokens(id),
-    FOREIGN KEY (return_type_id) REFERENCES return_types(id),
     UNIQUE KEY unique_daily_yield (token_id, pool_address, date)
 ) COMMENT '收益率数据表';
 
@@ -88,44 +82,46 @@ CREATE TABLE IF NOT EXISTS stat_cycles (
 ) COMMENT '统计周期表';
 
 -- 初始化基础数据
-INSERT INTO stat_cycles (name, days) 
-SELECT * FROM (
-    SELECT 'daily' as name, 1 as days UNION ALL
-    SELECT 'weekly', 7 UNION ALL
-    SELECT 'monthly', 30 UNION ALL
-    SELECT 'yearly', 365
-) AS tmp
-WHERE NOT EXISTS (
-    SELECT 1 FROM stat_cycles
-) LIMIT 1;
+ALTER TABLE stat_cycles
+  ADD UNIQUE KEY (name);
+	
+INSERT IGNORE INTO stat_cycles (name, days)
+VALUES
+    ('daily', 1),
+    ('weekly', 7),
+    ('monthly', 30),
+    ('yearly', 365);
 
-INSERT INTO asset_types (name)
-SELECT * FROM (
-    SELECT 'DeFi' as name UNION ALL
-    SELECT 'GameFi' UNION ALL
-    SELECT 'NFT'
-) AS tmp
-WHERE NOT EXISTS (
-    SELECT 1 FROM asset_types
-) LIMIT 1;
 
-INSERT INTO return_types (name)
-SELECT * FROM (
-    SELECT 'Staking' as name UNION ALL
-    SELECT 'Farming' UNION ALL
-    SELECT 'Lending'
-) AS tmp
-WHERE NOT EXISTS (
-    SELECT 1 FROM return_types
-) LIMIT 1;
+-- 确保 name 字段唯一
+ALTER TABLE asset_types
+  ADD UNIQUE KEY (name);
+
+-- 使用 INSERT IGNORE 插入多条记录
+INSERT IGNORE INTO asset_types (name)
+VALUES
+    ('DeFi'),
+    ('GameFi'),
+    ('NFT');
+
+
+ALTER TABLE return_types
+  ADD UNIQUE KEY (name);
+
+INSERT IGNORE INTO return_types (name)
+VALUES
+    ('Staking'),
+    ('Farming'),
+    ('Lending');
+
 
 -- 添加一些示例链
-INSERT INTO chains (name, chain_id)
-SELECT * FROM (
-    SELECT 'Ethereum' as name, 1 as chain_id UNION ALL
-    SELECT 'BSC', 56 UNION ALL
-    SELECT 'Polygon', 137
-) AS tmp
-WHERE NOT EXISTS (
-    SELECT 1 FROM chains
-) LIMIT 1;
+ALTER TABLE chains
+  ADD UNIQUE KEY (name);
+
+INSERT IGNORE INTO chains (name)
+VALUES
+    ('Polkadot'),   
+    ('Kusama'), 
+    ('Hydration'),
+    ('Bifrost');
