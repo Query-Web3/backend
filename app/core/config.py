@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     DB_PASS: str
     DB_NAME: str
 
+    # Test settings
+    TEST_API_URL: str = "http://localhost:8000"
+
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
@@ -21,5 +24,6 @@ class Settings(BaseSettings):
     class Config:
         case_sensitive = True
         env_file = ".env"
+        extra = "allow"  # 允许额外的字段
 
 settings = Settings()

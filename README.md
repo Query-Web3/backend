@@ -107,7 +107,8 @@ BLOCKCHAIN_RPC_URLS={"ethereum":"https://eth-mainnet.alchemyapi.io/v2/your-key"}
 
 1. 创建数据库：
 ```bash
-createdb queryweb3
+mysql -u root -p
+CREATE DATABASE queryweb3;
 ```
 
 2. 运行数据库迁移：
@@ -155,20 +156,71 @@ GET /api/v1/yield/
 - chain: 链名称
 - asset_type: 资产类型
 - return_type: 收益类型
+- page: 页码（默认1）
+- page_size: 每页记录数（默认10，最大100）
 ```
 
 详细的 API 文档请访问运行中的服务的 `/docs` 或 `/redoc` 端点。
 
 ## 测试
 
-运行测试：
+### 测试环境设置
+
+1. 安装测试依赖：
 ```bash
-pytest
+pip install -r tests/requirements.txt
 ```
 
-运行覆盖率报告：
+2. 配置测试环境：
+创建 `.env` 文件在 tests 目录下：
+```env
+TEST_API_URL=http://localhost:8000
+```
+
+### 运行测试
+
 ```bash
-pytest --cov=app tests/
+# 运行所有测试
+pytest tests/
+
+# 运行特定测试文件
+pytest tests/api/v1/test_endpoints.py
+
+# 运行特定测试类
+pytest tests/api/v1/test_endpoints.py::TestYieldEndpoint
+
+# 运行特定测试方法
+pytest tests/api/v1/test_endpoints.py::TestYieldEndpoint::test_yield_query_success
+```
+
+### 测试覆盖范围
+
+1. Yield 接口测试：
+- 基本查询功能
+- 分页功能
+- 无效的链名称
+- 返回数据结构验证
+
+2. VolTxns 接口测试：
+- 基本查询功能
+- 无效的链名称
+- 无效的日期范围
+- 返回数据结构验证
+
+### 添加新测试
+
+在 `tests/api/v1/test_endpoints.py` 中添加新的测试用例：
+
+```python
+def test_new_feature(self):
+    """测试新功能"""
+    payload = {
+        "param1": "value1",
+        "param2": "value2"
+    }
+    response = requests.post(self.ENDPOINT_URL, json=payload)
+    assert response.status_code == 200
+    # 添加更多断言...
 ```
 
 ## 监控和日志
@@ -188,9 +240,3 @@ pytest --cov=app tests/
 ## 许可证
 
 本项目采用 MIT 许可证 - 详见 LICENSE 文件
-
-## 联系方式
-
-- 项目维护者：oss-jtyd
-- 邮箱：oss.jtyd@gmail.com
-- 项目链接：[https://github.com/Query-Web3/backend](https://github.com/Query-Web3/backend)

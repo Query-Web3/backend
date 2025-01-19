@@ -20,6 +20,13 @@ async def get_vol_txns(
     query: VolTxnsQuery,
     db: Session = Depends(get_db)
 ):
+    # 验证日期范围
+    if query.from_date > query.to_date:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date range: from_date must be earlier than or equal to to_date"
+        )
+
     # 获取chain_id
     chain = db.query(Chain).filter(Chain.name == query.chain).first()
     if not chain:
@@ -90,36 +97,52 @@ async def get_yield(
     if query.token:
         filters.append(Token.symbol == query.token)
 
-    # 执行查询
-    results = base_query.filter(and_(*filters)).all()
+    # 计算总记录数
+    total_records = base_query.filter(and_(*filters)).count()
+    
+    # 计算分页信息
+    total_pages = (total_records + query.page_size - 1) // query.page_size
+    offset = (query.page - 1) * query.page_size
+
+    # 执行分页查询
+    results = base_query.filter(and_(*filters)).offset(offset).limit(query.page_size).all()
 
     # 获取24小时数据
     yesterday = query.date - timedelta(days=1)
+    yesterday_stats = {
+        (stat.token_id, stat.return_type_id): stat
+        for stat in base_query.filter(and_(
+            Chain.id == chain.id,
+            YieldStat.date == yesterday,
+            Token.asset_type_id == asset_type.id
+        )).all()
+    }
     
     response_data = []
     for yield_stat in results:
         # 获取24小时统计数据
-        daily_stat = db.query(TokenDailyStat).filter(
-            and_(
-                TokenDailyStat.token_id == yield_stat.token_id,
-                TokenDailyStat.date == yesterday
-            )
-        ).first()
-
+        yesterday_stat = yesterday_stats.get((yield_stat.token_id, yield_stat.return_type_id))
+        
+        token = yield_stat.token
         response_data.append({
-            "token": yield_stat.token.symbol,
+            "token": token.symbol,
             "apy": yield_stat.apy,
             "tvl_usd": yield_stat.tvl_usd,
-            "price_usd": daily_stat.price_usd if daily_stat else 0,
+            "price_usd": token.price_usd,
             "chain": chain.name,
             "return_type": yield_stat.return_type.name,
-            "vol_24h_usd": daily_stat.volume_usd if daily_stat else 0,
-            "txns_24h": daily_stat.txns_count if daily_stat else 0,
+            "vol_24h_usd": yesterday_stat.volume_usd if yesterday_stat else 0,
+            "txns_24h": yesterday_stat.txns_count if yesterday_stat else 0,
             "asset_type": asset_type.name,
             "date": yield_stat.date
         })
 
     return {
         "data": response_data,
-        "total": len(response_data)
+        "total": total_records,
+        "page": query.page,
+        "page_size": query.page_size,
+        "total_pages": total_pages,
+        "has_next": query.page < total_pages,
+        "has_prev": query.page > 1
     }
