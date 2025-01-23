@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
         "http://localhost:3000",  # React 前端默认端口
         "http://127.0.0.1:3000",
-        "http://localhost:8080",  # 备用端口
-        "http://127.0.0.1:8080",
+        "http://localhost:8000",  # 后端 API 端口
+        "http://127.0.0.1:8000",
     ]
 
     # Database settings
