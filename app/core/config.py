@@ -5,12 +5,13 @@ from pydantic import AnyHttpUrl
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "QueryWeb3"
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
-        "http://localhost:3000",  # React 前端默认端口
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",  # 后端 API 端口
-        "http://127.0.0.1:8000",
-    ]
+    # BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
+    #     "http://localhost:3000",  # React 前端默认端口
+    #     "http://127.0.0.1:3000",
+    #     "http://localhost:8000",  # 后端 API 端口
+    #     "http://127.0.0.1:8000",
+    #     "http://localhost:5174",
+    # ]
 
     # Database settings
     DB_HOST: str
