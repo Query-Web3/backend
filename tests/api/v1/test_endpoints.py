@@ -102,6 +102,119 @@ class TestYieldEndpoint:
             second_page_tokens = {item["token"] for item in second_page["data"]}
             assert not first_page_tokens.intersection(second_page_tokens)
 
+    def test_yield_query_missing_params(self):
+        """测试收益率查询接口 - 缺少必要参数"""
+        # 缺少date参数
+        payload = {
+            "chain": "Hydration",
+            "asset_type": "DeFi",
+            "return_type": "Staking",
+            "page": 1,
+            "page_size": 10
+        }
+        response = requests.post(self.YIELD_URL, json=payload)
+        assert response.status_code == 422
+
+    def test_yield_query_invalid_date_format(self):
+        """测试收益率查询接口 - 无效的日期格式"""
+        payload = {
+            "date": "invalid-date",
+            "chain": "Hydration",
+            "asset_type": "DeFi",
+            "return_type": "Staking",
+            "page": 1,
+            "page_size": 10
+        }
+        response = requests.post(self.YIELD_URL, json=payload)
+        assert response.status_code == 422
+
+    def test_yield_query_future_date(self):
+        """测试收益率查询接口 - 未来日期"""
+        future_date = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+        payload = {
+            "date": future_date,
+            "chain": "Hydration",
+            "asset_type": "DeFi",
+            "return_type": "Staking",
+            "page": 1,
+            "page_size": 10
+        }
+        response = requests.post(self.YIELD_URL, json=payload)
+        assert response.status_code == 200  # 服务器返回200状态码
+        response_data = response.json()
+        # 验证返回的数据为空
+        assert "data" in response_data
+        assert len(response_data["data"]) == 0  # 数据列表应该为空
+        assert response_data["total"] == 0  # 总数应该为0
+
+    def test_yield_query_invalid_asset_type(self):
+        """测试收益率查询接口 - 无效的资产类型"""
+        payload = {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "chain": "Hydration",
+            "asset_type": "InvalidType",
+            "return_type": "Staking",
+            "page": 1,
+            "page_size": 10
+        }
+        response = requests.post(self.YIELD_URL, json=payload)
+        assert response.status_code == 404
+        assert "Asset type not found" in response.json()["detail"]
+
+    def test_yield_query_invalid_return_type(self):
+        """测试收益率查询接口 - 无效的收益类型"""
+        payload = {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "chain": "Hydration",
+            "asset_type": "DeFi",
+            "return_type": "InvalidReturnType",
+            "page": 1,
+            "page_size": 10
+        }
+        response = requests.post(self.YIELD_URL, json=payload)
+        print(f"\nResponse status: {response.status_code}")
+        print(f"Response content: {response.text}")
+        
+        assert response.status_code == 200
+        response_data = response.json()
+        
+        # 验证响应的数据结构
+        assert isinstance(response_data, dict)
+        assert "data" in response_data
+        assert "total" in response_data
+        assert "page" in response_data
+        assert "page_size" in response_data
+        
+        # 如果有数据，验证数据的结构
+        if response_data["data"]:
+            first_item = response_data["data"][0]
+            required_fields = ["token", "apy", "tvl_usd", "chain", "return_type"]
+            for field in required_fields:
+                assert field in first_item, f"Field {field} missing in response data"
+            
+            # 验证返回的return_type是有效的类型之一
+            valid_return_types = {"Staking", "Farming", "Lending"}  # 从数据库schema中知道的有效类型
+            assert first_item["return_type"] in valid_return_types, f"Unexpected return_type: {first_item['return_type']}"
+
+    def test_yield_query_invalid_pagination(self):
+        """测试收益率查询接口 - 无效的分页参数"""
+        # 测试页码为0
+        payload = {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "chain": "Hydration",
+            "asset_type": "DeFi",
+            "return_type": "Staking",
+            "page": 0,
+            "page_size": 10
+        }
+        response = requests.post(self.YIELD_URL, json=payload)
+        assert response.status_code == 422
+
+        # 测试页大小为负数
+        payload["page"] = 1
+        payload["page_size"] = -1
+        response = requests.post(self.YIELD_URL, json=payload)
+        assert response.status_code == 422
 
 class TestVolTxnsEndpoint:
     VOL_TXNS_URL = f"{API_URL}/api/v1/vol-txns/"
@@ -157,14 +270,22 @@ class TestVolTxnsEndpoint:
         response = requests.post(self.VOL_TXNS_URL, json=payload)
         assert response.status_code == 400  # 应该返回400 Bad Request
 
+
 if __name__ == '__main__':
     # 测试收益率接口
     testYieldEndpoint = TestYieldEndpoint()
-    # testYieldEndpoint.test_yield_query_success()
-    # testYieldEndpoint.test_yield_query_invalid_chain()
-    # testYieldEndpoint.test_yield_query_pagination()
+    testYieldEndpoint.test_yield_query_success()
+    testYieldEndpoint.test_yield_query_invalid_chain()
+    testYieldEndpoint.test_yield_query_pagination()
+    testYieldEndpoint.test_yield_query_missing_params()
+    testYieldEndpoint.test_yield_query_invalid_date_format()
+    testYieldEndpoint.test_yield_query_future_date()
+    testYieldEndpoint.test_yield_query_invalid_asset_type()
+    testYieldEndpoint.test_yield_query_invalid_return_type()
+    testYieldEndpoint.test_yield_query_invalid_pagination()
 
+    # 测试交易量接口
     testVolTxnsEndpoint = TestVolTxnsEndpoint()
-    # testVolTxnsEndpoint.test_vol_txns_query_success()
-    # testVolTxnsEndpoint.test_vol_txns_query_invalid_chain()
+    testVolTxnsEndpoint.test_vol_txns_query_success()
+    testVolTxnsEndpoint.test_vol_txns_query_invalid_chain()
     testVolTxnsEndpoint.test_vol_txns_query_invalid_date_range()
