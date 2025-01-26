@@ -8,10 +8,9 @@ from app.schemas.schemas import (
 )
 from sqlalchemy import select, and_
 from app.models.models import (
-    Chain, Token, TokenDailyStat, YieldStat,
-    AssetType, ReturnType, StatCycle
+    Chain, Token, TokenDailyStat, YieldStat, StatCycle, AssetType, ReturnType
 )
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 router = APIRouter()
 
@@ -38,15 +37,15 @@ async def get_vol_txns(
         raise HTTPException(status_code=404, detail="Invalid cycle")
 
     # 构建查询
-    stmt = select(TokenDailyStat).join(Token).join(Chain).where(
+    results = db.query(TokenDailyStat).join(
+        Token, Token.id == TokenDailyStat.token_id
+    ).filter(
         and_(
-            Chain.id == chain.id,
+            Token.chain_id == chain.id,
             TokenDailyStat.date.between(query.from_date, query.to_date)
         )
-    ).order_by(TokenDailyStat.date)
+    ).order_by(TokenDailyStat.date).all()
 
-    results = db.execute(stmt).scalars().all()
-    
     response_data = []
     for stat in results:
         response_data.append({
@@ -79,7 +78,24 @@ async def get_yield(
         raise HTTPException(status_code=404, detail="Asset type not found")
 
     # 构建基础查询
-    base_query = db.query(YieldStat).join(Token).join(Chain).join(AssetType)
+    base_query = db.query(
+        YieldStat,
+        Token.symbol,
+        TokenDailyStat.price_usd,
+        Chain.name.label('chain_name'),
+        ReturnType.name.label('return_type_name'),
+        AssetType.name.label('asset_type_name')
+    ).join(
+        Token, Token.id == YieldStat.token_id
+    ).join(
+        TokenDailyStat, (TokenDailyStat.token_id == Token.id) & (TokenDailyStat.date == query.date)
+    ).join(
+        ReturnType, ReturnType.id == YieldStat.return_type_id
+    ).join(
+        Chain, Chain.id == Token.chain_id
+    ).join(
+        AssetType, AssetType.id == Token.asset_type_id
+    )
 
     # 添加过滤条件
     filters = [
@@ -111,31 +127,42 @@ async def get_yield(
     yesterday = query.date - timedelta(days=1)
     yesterday_stats = {
         (stat.token_id, stat.return_type_id): stat
-        for stat in base_query.filter(and_(
-            Chain.id == chain.id,
+        for stat in db.query(YieldStat).filter(and_(
             YieldStat.date == yesterday,
-            Token.asset_type_id == asset_type.id
+            YieldStat.token_id.in_([r.YieldStat.token_id for r in results])
         )).all()
     }
     
     response_data = []
-    for yield_stat in results:
-        # 获取24小时统计数据
-        yesterday_stat = yesterday_stats.get((yield_stat.token_id, yield_stat.return_type_id))
-        
-        token = yield_stat.token
-        response_data.append({
-            "token": token.symbol,
-            "apy": yield_stat.apy,
-            "tvl_usd": yield_stat.tvl_usd,
-            "price_usd": token.price_usd,
-            "chain": chain.name,
-            "return_type": yield_stat.return_type.name,
-            "vol_24h_usd": yesterday_stat.volume_usd if yesterday_stat else 0,
-            "txns_24h": yesterday_stat.txns_count if yesterday_stat else 0,
-            "asset_type": asset_type.name,
-            "date": yield_stat.date
-        })
+    for item in results:
+        # 获取昨日数据
+        yesterday_stat = db.query(
+            YieldStat,
+            TokenDailyStat.volume_usd
+        ).join(
+            Token, Token.id == YieldStat.token_id
+        ).join(
+            TokenDailyStat, (TokenDailyStat.token_id == Token.id) & (TokenDailyStat.date == yesterday)
+        ).filter(
+            YieldStat.token_id == item.YieldStat.token_id,
+            YieldStat.date == yesterday
+        ).first()
+
+        # 构建响应数据
+        yield_data = {
+            "token": item.symbol,
+            "apy": float(item.YieldStat.apy),
+            "tvl_usd": float(item.YieldStat.tvl_usd),
+            "price_usd": float(item.price_usd) if item.price_usd else 0,
+            "chain": item.chain_name,
+            "return_type": item.return_type_name,
+            "vol_24h_usd": float(yesterday_stat.volume_usd) if yesterday_stat else 0,
+            "txns_24h": 0,
+            "asset_type": item.asset_type_name,
+            "date": item.YieldStat.date
+        }
+
+        response_data.append(yield_data)
 
     return {
         "data": response_data,

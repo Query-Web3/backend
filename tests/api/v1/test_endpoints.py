@@ -25,6 +25,9 @@ class TestYieldEndpoint:
         }
         
         response = requests.post(self.YIELD_URL, json=payload)
+        print(f"\nResponse status: {response.status_code}")
+        print(f"Response content: {response.text}")
+        
         assert response.status_code == 200
         
         data = response.json()
@@ -153,3 +156,15 @@ class TestVolTxnsEndpoint:
         
         response = requests.post(self.VOL_TXNS_URL, json=payload)
         assert response.status_code == 400  # 应该返回400 Bad Request
+
+if __name__ == '__main__':
+    # 测试收益率接口
+    testYieldEndpoint = TestYieldEndpoint()
+    # testYieldEndpoint.test_yield_query_success()
+    # testYieldEndpoint.test_yield_query_invalid_chain()
+    # testYieldEndpoint.test_yield_query_pagination()
+
+    testVolTxnsEndpoint = TestVolTxnsEndpoint()
+    # testVolTxnsEndpoint.test_vol_txns_query_success()
+    # testVolTxnsEndpoint.test_vol_txns_query_invalid_chain()
+    testVolTxnsEndpoint.test_vol_txns_query_invalid_date_range()

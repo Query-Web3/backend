@@ -38,9 +38,6 @@ class Token(Base):
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 
-    chain = relationship("Chain")
-    asset_type = relationship("AssetType")
-
 class TokenDailyStat(Base):
     __tablename__ = "fact_token_daily_stats"
     
@@ -56,8 +53,6 @@ class TokenDailyStat(Base):
     txns_yoy = Column(DECIMAL(10, 2))
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
 
-    token = relationship("Token")
-
 class YieldStat(Base):
     __tablename__ = "fact_yield_stats"
     
@@ -70,9 +65,6 @@ class YieldStat(Base):
     tvl = Column(DECIMAL(36, 18), nullable=False)
     tvl_usd = Column(DECIMAL(36, 18), nullable=False)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-
-    token = relationship("Token")
-    return_type = relationship("ReturnType")
 
 class StatCycle(Base):
     __tablename__ = "dim_stat_cycles"
