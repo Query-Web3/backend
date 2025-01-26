@@ -6,7 +6,7 @@ USE queryweb3;
 -- 1. 区块链网络表
 CREATE TABLE IF NOT EXISTS chains (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL COMMENT '网络名称，如 Ethereum、BSC等',
+    name VARCHAR(50) NOT NULL COMMENT '网络名称，如 Polkadot、Kusama、Hydration、Bifrost',
     chain_id INT NOT NULL COMMENT '链ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS chains (
 -- 2. 资产类型表
 CREATE TABLE IF NOT EXISTS asset_types (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL COMMENT '资产类型名称，如 DeFi、GameFi等',
+    name VARCHAR(50) NOT NULL COMMENT '资产类型名称，如 DeFi、GameFi、NFT',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_name (name)
 ) COMMENT '资产类型表';
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS asset_types (
 -- 3. 收益类型表
 CREATE TABLE IF NOT EXISTS return_types (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL COMMENT '收益类型，如 Staking、Farming等',
+    name VARCHAR(50) NOT NULL COMMENT '收益类型，如 Staking、Farming、Lending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_name (name)
 ) COMMENT '收益类型表';
@@ -81,6 +81,8 @@ CREATE TABLE IF NOT EXISTS stat_cycles (
     UNIQUE KEY unique_name (name)
 ) COMMENT '统计周期表';
 
+
+
 -- 初始化基础数据
 ALTER TABLE stat_cycles
   ADD UNIQUE KEY (name);
@@ -125,3 +127,62 @@ VALUES
     ('Kusama'), 
     ('Hydration'),
     ('Bifrost');
+
+
+INSERT INTO token_daily_stats
+(token_id, date, volume, volume_usd, txns_count, price_usd, volume_yoy, volume_qoq, txns_yoy)
+WITH RECURSIVE dates AS (
+    SELECT CURDATE() - INTERVAL 100 DAY as date
+    UNION ALL
+    SELECT date + INTERVAL 1 DAY
+    FROM dates
+    WHERE date < CURDATE()
+)
+SELECT
+    1 as token_id,
+    d.date,
+    ROUND(RAND() * 1000000, 4) as volume,
+    ROUND(RAND() * 1000000, 4) as volume_usd,
+    FLOOR(RAND() * 100000) as txns_count,
+    ROUND(RAND() * 1000, 4) as price_usd,
+    ROUND((RAND() * 20 - 10), 2) as volume_yoy,
+    ROUND((RAND() * 15 - 7), 2) as volume_qoq,
+    ROUND((RAND() * 30 - 15), 2) as txns_yoy
+FROM dates d;
+
+
+INSERT INTO yield_stats
+(token_id, return_type_id, pool_address, date, apy, tvl, tvl_usd)
+WITH RECURSIVE dates AS (
+    SELECT CURDATE() - INTERVAL 49 DAY as date
+    UNION ALL
+    SELECT date + INTERVAL 1 DAY
+    FROM dates
+    WHERE date < CURDATE()
+),
+tokens AS (
+    SELECT 1 as token_id UNION ALL
+    SELECT 2 UNION ALL
+    SELECT 3 UNION ALL
+    SELECT 4 UNION ALL
+    SELECT 5
+),
+pools AS (
+    SELECT
+        token_id,
+        CONCAT('0x', LPAD(HEX(token_id * 1000 + ROW_NUMBER() OVER (PARTITION BY token_id ORDER BY token_id)), 40, '0')) as pool_address
+    FROM tokens
+    CROSS JOIN (SELECT 1 as n UNION ALL SELECT 2) numbers
+)
+SELECT
+    p.token_id,
+    1 + FLOOR(RAND() * 3) as return_type_id,  -- 随机生成1-3的return_type_id
+    p.pool_address,
+    d.date,
+    ROUND(RAND() * 20, 2) as apy,             -- 0-20% 的 APY
+    ROUND(RAND() * 1000000, 4) as tvl,        -- 保留4位小数的 TVL
+    ROUND(RAND() * 1000000, 4) as tvl_usd     -- 保留4位小数的 TVL USD
+FROM dates d
+CROSS JOIN pools p
+ORDER BY RAND()
+LIMIT 250
