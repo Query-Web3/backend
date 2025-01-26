@@ -17,9 +17,9 @@ class TestYieldEndpoint:
         """测试收益率查询接口 - 成功场景"""
         payload = {
             "date": datetime.now().strftime("%Y-%m-%d"),
-            "chain": "hydration",
-            "asset_type": "defi",
-            "return_type": "staking",
+            "chain": "Hydration",
+            "asset_type": "DeFi",
+            "return_type": "Staking",
             "page": 1,
             "page_size": 10
         }
@@ -60,7 +60,7 @@ class TestYieldEndpoint:
         payload = {
             "date": datetime.now().strftime("%Y-%m-%d"),
             "chain": "invalid_chain",
-            "asset_type": "defi",
+            "asset_type": "DeFi",
             "page": 1,
             "page_size": 10
         }
@@ -74,8 +74,8 @@ class TestYieldEndpoint:
         # 测试第一页
         payload = {
             "date": datetime.now().strftime("%Y-%m-%d"),
-            "chain": "hydration",
-            "asset_type": "defi",
+            "chain": "Hydration",
+            "asset_type": "DeFi",
             "page": 1,
             "page_size": 5
         }
@@ -108,7 +108,7 @@ class TestVolTxnsEndpoint:
         payload = {
             "from_date": (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d"),
             "to_date": datetime.now().strftime("%Y-%m-%d"),
-            "chain": "hydration",
+            "chain": "Hydration",
             "cycle": "daily"
         }
         
@@ -147,7 +147,7 @@ class TestVolTxnsEndpoint:
         payload = {
             "from_date": datetime.now().strftime("%Y-%m-%d"),
             "to_date": (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d"),  # 结束日期早于开始日期
-            "chain": "hydration",
+            "chain": "Hydration",
             "cycle": "daily"
         }
         

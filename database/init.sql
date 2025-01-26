@@ -4,7 +4,7 @@ CREATE DATABASE IF NOT EXISTS queryweb3 CHARACTER SET utf8mb4 COLLATE utf8mb4_un
 USE queryweb3;
 
 -- 1. 区块链网络表
-CREATE TABLE IF NOT EXISTS chains (
+CREATE TABLE IF NOT EXISTS dim_chains (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL COMMENT '网络名称，如 Polkadot、Kusama、Hydration、Bifrost',
     chain_id INT NOT NULL COMMENT '链ID',
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS chains (
 ) COMMENT '区块链网络信息表';
 
 -- 2. 资产类型表
-CREATE TABLE IF NOT EXISTS asset_types (
+CREATE TABLE IF NOT EXISTS dim_asset_types (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL COMMENT '资产类型名称，如 DeFi、GameFi、NFT',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS asset_types (
 ) COMMENT '资产类型表';
 
 -- 3. 收益类型表
-CREATE TABLE IF NOT EXISTS return_types (
+CREATE TABLE IF NOT EXISTS dim_return_types (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL COMMENT '收益类型，如 Staking、Farming、Lending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS return_types (
 ) COMMENT '收益类型表';
 
 -- 4. 代币表
-CREATE TABLE IF NOT EXISTS tokens (
+CREATE TABLE IF NOT EXISTS dim_tokens (
     id INT PRIMARY KEY AUTO_INCREMENT,
     chain_id INT NOT NULL COMMENT '所属链ID',
     address VARCHAR(42) NOT NULL COMMENT '代币合约地址',
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS tokens (
 ) COMMENT '代币基础信息表';
 
 -- 5. 代币每日数据表
-CREATE TABLE IF NOT EXISTS token_daily_stats (
+CREATE TABLE IF NOT EXISTS fact_token_daily_stats (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     token_id INT NOT NULL COMMENT '代币ID',
     date DATE NOT NULL COMMENT '日期',
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS token_daily_stats (
 ) COMMENT '代币每日统计数据表';
 
 -- 6. 收益率数据表
-CREATE TABLE IF NOT EXISTS yield_stats (
+CREATE TABLE IF NOT EXISTS fact_yield_stats (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     token_id INT NOT NULL COMMENT '代币ID',
     return_type_id INT NOT NULL COMMENT '收益类型ID',
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS yield_stats (
 ) COMMENT '收益率数据表';
 
 -- 7. 统计周期表
-CREATE TABLE IF NOT EXISTS stat_cycles (
+CREATE TABLE IF NOT EXISTS dim_stat_cycles (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(20) NOT NULL COMMENT '统计周期名称(daily/weekly/monthly/yearly)',
     days INT NOT NULL COMMENT '周期天数',
@@ -84,10 +84,10 @@ CREATE TABLE IF NOT EXISTS stat_cycles (
 
 
 -- 初始化基础数据
-ALTER TABLE stat_cycles
+ALTER TABLE dim_stat_cycles
   ADD UNIQUE KEY (name);
 	
-INSERT IGNORE INTO stat_cycles (name, days)
+INSERT IGNORE INTO dim_stat_cycles (name, days)
 VALUES
     ('daily', 1),
     ('weekly', 7),
@@ -96,21 +96,21 @@ VALUES
 
 
 -- 确保 name 字段唯一
-ALTER TABLE asset_types
+ALTER TABLE dim_asset_types
   ADD UNIQUE KEY (name);
 
 -- 使用 INSERT IGNORE 插入多条记录
-INSERT IGNORE INTO asset_types (name)
+INSERT IGNORE INTO dim_asset_types (name)
 VALUES
     ('DeFi'),
     ('GameFi'),
     ('NFT');
 
 
-ALTER TABLE return_types
+ALTER TABLE dim_return_types
   ADD UNIQUE KEY (name);
 
-INSERT IGNORE INTO return_types (name)
+INSERT IGNORE INTO dim_return_types (name)
 VALUES
     ('Staking'),
     ('Farming'),
@@ -118,18 +118,27 @@ VALUES
 
 
 -- 添加一些示例链
-ALTER TABLE chains
+ALTER TABLE dim_chains
   ADD UNIQUE KEY (name);
 
-INSERT IGNORE INTO chains (name)
+INSERT IGNORE INTO dim_chains (name)
 VALUES
     ('Polkadot'),   
     ('Kusama'), 
     ('Hydration'),
     ('Bifrost');
 
+-- 插入代币数据
+INSERT INTO dim_tokens
+(id, chain_id, address, symbol, name, decimals, asset_type_id)
+VALUES
+(1, 3, '0x1234567890123456789012345678901234567890', 'TKN1', 'Token1', 18, 1),
+(2, 3, '0x2345678901234567890123456789012345678901', 'TKN2', 'Token2', 18, 1),
+(3, 3, '0x3456789012345678901234567890123456789012', 'TKN3', 'Token3', 18, 1),
+(4, 3, '0x4567890123456789012345678901234567890123', 'TKN4', 'Token4', 18, 1),
+(5, 3, '0x5678901234567890123456789012345678901234', 'TKN5', 'Token5', 18, 1);
 
-INSERT INTO token_daily_stats
+INSERT INTO fact_token_daily_stats
 (token_id, date, volume, volume_usd, txns_count, price_usd, volume_yoy, volume_qoq, txns_yoy)
 WITH RECURSIVE dates AS (
     SELECT CURDATE() - INTERVAL 100 DAY as date
@@ -151,7 +160,7 @@ SELECT
 FROM dates d;
 
 
-INSERT INTO yield_stats
+INSERT INTO fact_yield_stats
 (token_id, return_type_id, pool_address, date, apy, tvl, tvl_usd)
 WITH RECURSIVE dates AS (
     SELECT CURDATE() - INTERVAL 49 DAY as date
@@ -169,9 +178,9 @@ tokens AS (
 ),
 pools AS (
     SELECT
-        token_id,
-        CONCAT('0x', LPAD(HEX(token_id * 1000 + ROW_NUMBER() OVER (PARTITION BY token_id ORDER BY token_id)), 40, '0')) as pool_address
-    FROM tokens
+        t.token_id,
+        CONCAT('0x', LPAD(HEX(t.token_id * 1000 + ROW_NUMBER() OVER (PARTITION BY t.token_id ORDER BY t.token_id)), 40, '0')) as pool_address
+    FROM tokens t
     CROSS JOIN (SELECT 1 as n UNION ALL SELECT 2) numbers
 )
 SELECT
