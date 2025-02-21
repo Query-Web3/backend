@@ -1,0 +1,14 @@
+{
+    "cSpell.words": [
+        "autoflush",
+        "levelname",
+        "sessionmaker",
+        "Txns"
+    ],
+    "files.exclude": {
+        "**/__pycache__": true
+    },
+    "search.exclude": {
+        "**/__pycache__": true
+    }
+}
