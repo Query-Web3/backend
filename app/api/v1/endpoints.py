@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.db.session import get_db
 from app.schemas.schemas import (
     VolTxnsQuery, YieldQuery,
@@ -62,7 +62,7 @@ async def get_vol_txns(
         "total": len(response_data)
     }
 
-@router.post("/yield/", response_model=YieldListResponse)
+@router.post("/yield", response_model=YieldListResponse)
 async def get_yield(
     query: YieldQuery,
     db: Session = Depends(get_db)
@@ -173,3 +173,39 @@ async def get_yield(
         "has_next": query.page < total_pages,
         "has_prev": query.page > 1
     }
+
+@router.get("/chains", response_model=List[str])
+async def get_chains(db: Session = Depends(get_db)):
+    """获取所有可用的区块链网络列表"""
+    chains = db.query(Chain.name).all()
+    return [chain[0] for chain in chains]
+
+@router.get("/asset-types", response_model=List[str])
+async def get_asset_types(db: Session = Depends(get_db)):
+    """获取所有可用的资产类型列表"""
+    asset_types = db.query(AssetType.name).all()
+    return [asset_type[0] for asset_type in asset_types]
+
+@router.get("/return-types", response_model=List[str])
+async def get_return_types(db: Session = Depends(get_db)):
+    """获取所有可用的收益类型列表"""
+    return_types = db.query(ReturnType.name).all()
+    return [return_type[0] for return_type in return_types]
+
+@router.get("/tokens", response_model=List[str])
+async def get_tokens(
+    chain: Optional[str] = None,
+    asset_type: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """获取代币列表，可以按链和资产类型筛选"""
+    query = db.query(Token.symbol)
+    
+    if chain:
+        query = query.join(Chain).filter(Chain.name == chain)
+    
+    if asset_type:
+        query = query.join(AssetType).filter(AssetType.name == asset_type)
+    
+    tokens = query.all()
+    return [token[0] for token in tokens]
