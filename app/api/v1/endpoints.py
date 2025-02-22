@@ -14,7 +14,7 @@ from datetime import timedelta
 
 router = APIRouter()
 
-@router.post("/vol-txns/", response_model=VolTxnsListResponse)
+@router.post("/vol-txns", response_model=VolTxnsListResponse)
 async def get_vol_txns(
     query: VolTxnsQuery,
     db: Session = Depends(get_db)
@@ -199,13 +199,13 @@ async def get_tokens(
     db: Session = Depends(get_db)
 ):
     """获取代币列表，可以按链和资产类型筛选"""
-    query = db.query(Token.symbol)
+    query = db.query(Token.symbol).select_from(Token)
     
     if chain:
-        query = query.join(Chain).filter(Chain.name == chain)
+        query = query.join(Chain, Token.chain_id == Chain.id).filter(Chain.name == chain)
     
     if asset_type:
-        query = query.join(AssetType).filter(AssetType.name == asset_type)
+        query = query.join(AssetType, Token.asset_type_id == AssetType.id).filter(AssetType.name == asset_type)
     
     tokens = query.all()
     return [token[0] for token in tokens]
