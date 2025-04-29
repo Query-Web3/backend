@@ -1,7 +1,7 @@
 -- 创建数据库
-CREATE DATABASE IF NOT EXISTS queryweb3 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS queryweb3_front CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE queryweb3;
+USE queryweb3_front;
 
 -- 1. 区块链网络表
 CREATE TABLE IF NOT EXISTS dim_chains (
