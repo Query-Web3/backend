@@ -37,7 +37,7 @@ async def get_vol_txns(
         raise HTTPException(status_code=404, detail="Invalid cycle")
 
     # 构建查询
-    results = db.query(TokenDailyStat).join(
+    results = db.query(TokenDailyStat, Token.symbol).join(
         Token, Token.id == TokenDailyStat.token_id
     ).filter(
         and_(
@@ -47,14 +47,16 @@ async def get_vol_txns(
     ).order_by(TokenDailyStat.date).all()
 
     response_data = []
-    for stat in results:
+    for stat, token_symbol in results:
         response_data.append({
             "time": stat.date,
             "volume": stat.volume,
             "yoy": stat.volume_yoy,
             "qoq": stat.volume_qoq,
             "txns": stat.txns_count,
-            "txns_yoy": stat.txns_yoy
+            "txns_yoy": stat.txns_yoy,
+            "txns_qoq": stat.txns_qoq,
+            "token": token_symbol
         })
 
     return {

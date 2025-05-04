@@ -51,6 +51,7 @@ class TokenDailyStat(Base):
     volume_yoy = Column(DECIMAL(10, 2))
     volume_qoq = Column(DECIMAL(10, 2))
     txns_yoy = Column(DECIMAL(10, 2))
+    txns_qoq = Column(DECIMAL(10, 2))
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
 
 class YieldStat(Base):
