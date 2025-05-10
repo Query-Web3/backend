@@ -11,7 +11,7 @@ app = FastAPI(
 # Set all CORS enabled origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://queryweb3.wmjtyd.net" ,"https://queryweb3.com","https://wwww.queryweb3.com"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://queryweb3.wmjtyd.net" ,"http://queryweb3.com","http://www.queryweb3.com", "https://queryweb3.com","https://www.queryweb3.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
