@@ -3,19 +3,23 @@ from datetime import date
 from typing import Optional, List
 from decimal import Decimal
 
+
 # Base Schemas
 class ChainBase(BaseModel):
     name: str
     chain_id: int
 
+
 class TokenBase(BaseModel):
     symbol: str
     chain: str
+
 
 # Pagination
 class PaginationParams(BaseModel):
     page: int = Field(default=1, ge=1, description="Page number")
     page_size: int = Field(default=10, ge=1, le=100, description="Items per page")
+
 
 # Request Schemas
 class VolTxnsQuery(BaseModel):
@@ -23,6 +27,7 @@ class VolTxnsQuery(BaseModel):
     to_date: date
     chain: str
     cycle: str
+
 
 class YieldQuery(BaseModel):
     date: date
@@ -32,6 +37,7 @@ class YieldQuery(BaseModel):
     token: Optional[str] = None
     page: int = Field(default=1, ge=1, description="Page number")
     page_size: int = Field(default=10, ge=1, le=100, description="Items per page")
+
 
 # Response Schemas
 class VolTxnsResponse(BaseModel):
@@ -43,6 +49,7 @@ class VolTxnsResponse(BaseModel):
     txns_yoy: Optional[Decimal]
     txns_qoq: Optional[Decimal]
     token: Optional[str] = None
+
 
 class YieldResponse(BaseModel):
     token: str
@@ -56,6 +63,7 @@ class YieldResponse(BaseModel):
     asset_type: str
     date: date
 
+
 class PaginatedResponse(BaseModel):
     total: int
     page: int
@@ -64,9 +72,11 @@ class PaginatedResponse(BaseModel):
     has_next: bool
     has_prev: bool
 
+
 class VolTxnsListResponse(BaseModel):
     data: List[VolTxnsResponse]
     total: int
+
 
 class YieldListResponse(PaginatedResponse):
     data: List[YieldResponse]

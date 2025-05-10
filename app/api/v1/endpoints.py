@@ -14,6 +14,7 @@ from datetime import timedelta
 
 router = APIRouter()
 
+
 @router.post("/vol-txns", response_model=VolTxnsListResponse)
 async def get_vol_txns(
     query: VolTxnsQuery,
@@ -63,6 +64,7 @@ async def get_vol_txns(
         "data": response_data,
         "total": len(response_data)
     }
+
 
 @router.post("/yield", response_model=YieldListResponse)
 async def get_yield(
@@ -176,11 +178,20 @@ async def get_yield(
         "has_prev": query.page > 1
     }
 
+
 @router.get("/chains", response_model=List[str])
 async def get_chains(db: Session = Depends(get_db)):
     """获取所有可用的区块链网络列表"""
     chains = db.query(Chain.name).all()
     return [chain[0] for chain in chains]
+
+
+@router.get("/cycles", response_model=List[str])
+async def get_cycles(db: Session = Depends(get_db)):
+    """获取所有可用的区块链网络列表"""
+    chains = db.query(StatCycle.name).all()
+    return [chain[0] for chain in chains]
+
 
 @router.get("/asset-types", response_model=List[str])
 async def get_asset_types(db: Session = Depends(get_db)):
@@ -188,11 +199,13 @@ async def get_asset_types(db: Session = Depends(get_db)):
     asset_types = db.query(AssetType.name).all()
     return [asset_type[0] for asset_type in asset_types]
 
+
 @router.get("/return-types", response_model=List[str])
 async def get_return_types(db: Session = Depends(get_db)):
     """获取所有可用的收益类型列表"""
     return_types = db.query(ReturnType.name).all()
     return [return_type[0] for return_type in return_types]
+
 
 @router.get("/tokens", response_model=List[str])
 async def get_tokens(
