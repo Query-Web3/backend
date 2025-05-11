@@ -49,6 +49,7 @@ class VolTxnsResponse(BaseModel):
     txns_yoy: Optional[Decimal]
     txns_qoq: Optional[Decimal]
     token: Optional[str] = None
+    chain: Optional[str] = None
 
 
 class YieldResponse(BaseModel):
