@@ -31,8 +31,8 @@ class VolTxnsQuery(BaseModel):
 
 class YieldQuery(BaseModel):
     date: date
-    chain: str
-    asset_type: str
+    chain: Optional[str] = None
+    asset_type: Optional[str] = None
     return_type: Optional[str] = None
     token: Optional[str] = None
     page: int = Field(default=1, ge=1, description="Page number")

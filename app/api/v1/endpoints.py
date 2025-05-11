@@ -27,28 +27,41 @@ async def get_vol_txns(
             detail="Invalid date range: from_date must be earlier than or equal to to_date"
         )
 
-    # 获取chain_id
-    chain = db.query(Chain).filter(Chain.name == query.chain).first()
-    if not chain:
-        raise HTTPException(status_code=404, detail="Chain not found")
-
     # 获取统计周期
     cycle = db.query(StatCycle).filter(StatCycle.name == query.cycle).first()
     if not cycle:
         raise HTTPException(status_code=404, detail="Invalid cycle")
 
-    # 构建查询
-    results = db.query(TokenDailyStat, Token.symbol).join(
+    # 构建基础查询
+    base_query = db.query(
+        TokenDailyStat,
+        Token.symbol,
+        Chain.name.label('chain')
+    ).join(
         Token, Token.id == TokenDailyStat.token_id
-    ).filter(
-        and_(
-            Token.chain_id == chain.id,
-            TokenDailyStat.date.between(query.from_date, query.to_date)
-        )
-    ).order_by(TokenDailyStat.date).all()
+    ).join(
+        Chain, Chain.id == Token.chain_id
+    )
+
+    # 构建过滤条件
+    filters = [TokenDailyStat.date.between(query.from_date, query.to_date)]
+
+    # 如果指定了链，添加链的过滤条件
+    if query.chain:
+        chain = db.query(Chain).filter(Chain.name == query.chain).first()
+        if not chain:
+            raise HTTPException(status_code=404, detail="Chain not found")
+        filters.append(Token.chain_id == chain.id)
+
+    # 执行查询，按交易量从高到低排序
+    results = base_query.filter(and_(*filters)).order_by(TokenDailyStat.volume.desc()).all()
+    print(f"DEBUG: Query results count: {len(results)}")
+    print(f"DEBUG: Query filters: {filters}")
+    print(f"DEBUG: First result: {results[0] if results else None}")
 
     response_data = []
-    for stat, token_symbol in results:
+    for stat, token_symbol, chain in results:
+        print(f"DEBUG: Processing row - stat={stat.date}, token={token_symbol}, chain={chain}")
         response_data.append({
             "time": stat.date,
             "volume": stat.volume,
@@ -57,13 +70,17 @@ async def get_vol_txns(
             "txns": stat.txns_count,
             "txns_yoy": stat.txns_yoy,
             "txns_qoq": stat.txns_qoq,
-            "token": token_symbol
+            "token": token_symbol,
+            "chain": chain
         })
 
-    return {
+    response = {
         "data": response_data,
         "total": len(response_data)
     }
+    print(f"DEBUG: Final response data count: {len(response_data)}")
+    print(f"DEBUG: First response item: {response_data[0] if response_data else None}")
+    return response
 
 
 @router.post("/yield", response_model=YieldListResponse)
@@ -71,16 +88,6 @@ async def get_yield(
     query: YieldQuery,
     db: Session = Depends(get_db)
 ):
-    # 获取chain
-    chain = db.query(Chain).filter(Chain.name == query.chain).first()
-    if not chain:
-        raise HTTPException(status_code=404, detail="Chain not found")
-
-    # 获取asset_type
-    asset_type = db.query(AssetType).filter(AssetType.name == query.asset_type).first()
-    if not asset_type:
-        raise HTTPException(status_code=404, detail="Asset type not found")
-
     # 构建基础查询
     base_query = db.query(
         YieldStat,
@@ -101,12 +108,20 @@ async def get_yield(
         AssetType, AssetType.id == Token.asset_type_id
     )
 
-    # 添加过滤条件
-    filters = [
-        Chain.id == chain.id,
-        YieldStat.date == query.date,
-        Token.asset_type_id == asset_type.id
-    ]
+    # 构建过滤条件
+    filters = [YieldStat.date == query.date]
+
+    # 如果指定了链，添加链的过滤条件
+    if query.chain:
+        chain = db.query(Chain).filter(Chain.name == query.chain).first()
+        if chain:
+            filters.append(Chain.id == chain.id)
+
+    # 如果指定了资产类型，添加资产类型的过滤条件
+    if query.asset_type:
+        asset_type = db.query(AssetType).filter(AssetType.name == query.asset_type).first()
+        if asset_type:
+            filters.append(Token.asset_type_id == asset_type.id)
 
     # 添加可选过滤条件
     if query.return_type:
@@ -124,8 +139,8 @@ async def get_yield(
     total_pages = (total_records + query.page_size - 1) // query.page_size
     offset = (query.page - 1) * query.page_size
 
-    # 执行分页查询
-    results = base_query.filter(and_(*filters)).offset(offset).limit(query.page_size).all()
+    # 执行分页查询，按 APY 从高到低排序
+    results = base_query.filter(and_(*filters)).order_by(YieldStat.apy.desc()).offset(offset).limit(query.page_size).all()
 
     # 获取24小时数据
     yesterday = query.date - timedelta(days=1)
