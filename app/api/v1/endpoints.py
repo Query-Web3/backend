@@ -142,29 +142,20 @@ async def get_yield(
     # 执行分页查询，按 APY 从高到低排序
     results = base_query.filter(and_(*filters)).order_by(YieldStat.apy.desc()).offset(offset).limit(query.page_size).all()
 
-    # 获取24小时数据
-    yesterday = query.date - timedelta(days=1)
-    yesterday_stats = {
-        (stat.token_id, stat.return_type_id): stat
-        for stat in db.query(YieldStat).filter(and_(
-            YieldStat.date == yesterday,
-            YieldStat.token_id.in_([r.YieldStat.token_id for r in results])
-        )).all()
-    }
-    
     response_data = []
     for item in results:
         # 获取昨日数据
         yesterday_stat = db.query(
             YieldStat,
-            TokenDailyStat.volume_usd
+            TokenDailyStat.volume_usd,
+            TokenDailyStat.txns_count
         ).join(
             Token, Token.id == YieldStat.token_id
         ).join(
-            TokenDailyStat, (TokenDailyStat.token_id == Token.id) & (TokenDailyStat.date == yesterday)
+            TokenDailyStat, (TokenDailyStat.token_id == Token.id) & (TokenDailyStat.date == query.date)
         ).filter(
             YieldStat.token_id == item.YieldStat.token_id,
-            YieldStat.date == yesterday
+            YieldStat.date == query.date
         ).first()
 
         # 构建响应数据
@@ -176,7 +167,7 @@ async def get_yield(
             "chain": item.chain_name,
             "return_type": item.return_type_name,
             "vol_24h_usd": float(yesterday_stat.volume_usd) if yesterday_stat else 0,
-            "txns_24h": 0,
+            "txns_24h": float(yesterday_stat.txns_count) if yesterday_stat else 0,
             "asset_type": item.asset_type_name,
             "date": item.YieldStat.date
         }
