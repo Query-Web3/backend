@@ -1,0 +1,18 @@
+
+schema:
+  - gql/*.graphql
+
+# Where should the generated server code go?
+exec:
+  filename: gql/generated.go
+  package: gql
+
+# Uncomment to enable federation
+# federation:
+#   filename: graph/federation.go
+#   package: graph
+
+# Where should any generated models go?
+model:
+  filename: gql/models_gen.go
+  package: gql

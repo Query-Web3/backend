@@ -1,0 +1,32 @@
+scalar Time
+
+type Transaction {
+    id: Int!
+    date: Time!
+    amount: Float!
+}
+
+type Yield {
+    id: Int!
+    date: Time!
+    amount: Float!
+}
+
+extend type Query {
+    txns(
+        date: Int
+        chain: Int
+        asset: String
+        token: String
+        return: String
+    ): String!
+    
+    yields(
+        date: Int
+        chain: Int
+        asset: String
+        token: String
+        return: String
+    ): String!
+}
+
