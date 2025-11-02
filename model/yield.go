@@ -3,17 +3,17 @@ package model
 import (
 	"encoding/json"
 
-	db "github.com/Query-Web3/backend/model/dbgen"
+	"github.com/Query-Web3/backend/model/dbgen"
 )
 
 func Yields() (string, error) {
-	users := []db.BifrostSiteTable{}
-	result := DB.Find(&users)
+	list := []dbgen.MultipleYield{}
+	result := DB.Find(&list)
 	if result.Error != nil {
 		return "", result.Error
 	}
 
-	jsonStr, err := json.Marshal(users)
+	jsonStr, err := json.Marshal(list)
 	if err != nil {
 		return "", err
 	}

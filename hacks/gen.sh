@@ -10,7 +10,7 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd  )"
 
 cd $DIR/../
-go generate ./...
+# go generate ./...
 
 cd model/
-# gentool -c "./db.tool"
+gentool -c "./db.tool"
