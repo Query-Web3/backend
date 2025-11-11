@@ -29,11 +29,14 @@ func (r *queryResolver) Txns(ctx context.Context, date *int, chain *int, asset *
 	return "[]", nil
 }
 
-func (r *queryResolver) Yields(ctx context.Context, date *int, chain *int, asset *string, token *string, returnType *string) (string, error) {
-	data, err := model.Yields()
+func (r *queryResolver) Yields(ctx context.Context, date *int, chain *int, asset *string, token *string, returnType *string, page int, size int) (*PageResult, error) {
+	data, total, err := model.Yields(page, size)
 	if err != nil {
-		return "", gqlerror.Errorf("Failed to get yields: %v", err)
+		return nil, gqlerror.Errorf("Failed to get yields: %v", err)
 	}
 
-	return data, nil
+	return &PageResult{
+		Total: int(total),
+		Data:  data,
+	}, nil
 }

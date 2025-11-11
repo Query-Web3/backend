@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+type PageResult struct {
+	Total int    `json:"total"`
+	Data  string `json:"data"`
+}
+
 type Query struct {
 }
 

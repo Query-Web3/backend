@@ -12,6 +12,11 @@ type Yield {
     amount: Float!
 }
 
+type PageResult {
+    total: Int!
+    data: String!
+}
+
 extend type Query {
     txns(
         date: Int
@@ -27,6 +32,8 @@ extend type Query {
         asset: String
         token: String
         return: String
-    ): String!
+        page: Int!
+        size: Int!
+    ): PageResult!
 }
 

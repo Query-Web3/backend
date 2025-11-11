@@ -46,9 +46,14 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	PageResult struct {
+		Data  func(childComplexity int) int
+		Total func(childComplexity int) int
+	}
+
 	Query struct {
 		Txns   func(childComplexity int, date *int, chain *int, asset *string, token *string, returnArg *string) int
-		Yields func(childComplexity int, date *int, chain *int, asset *string, token *string, returnArg *string) int
+		Yields func(childComplexity int, date *int, chain *int, asset *string, token *string, returnArg *string, page int, size int) int
 	}
 
 	Transaction struct {
@@ -66,7 +71,7 @@ type ComplexityRoot struct {
 
 type QueryResolver interface {
 	Txns(ctx context.Context, date *int, chain *int, asset *string, token *string, returnArg *string) (string, error)
-	Yields(ctx context.Context, date *int, chain *int, asset *string, token *string, returnArg *string) (string, error)
+	Yields(ctx context.Context, date *int, chain *int, asset *string, token *string, returnArg *string, page int, size int) (*PageResult, error)
 }
 
 type executableSchema struct {
@@ -87,6 +92,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "PageResult.data":
+		if e.complexity.PageResult.Data == nil {
+			break
+		}
+
+		return e.complexity.PageResult.Data(childComplexity), true
+	case "PageResult.total":
+		if e.complexity.PageResult.Total == nil {
+			break
+		}
+
+		return e.complexity.PageResult.Total(childComplexity), true
 
 	case "Query.txns":
 		if e.complexity.Query.Txns == nil {
@@ -109,7 +127,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Yields(childComplexity, args["date"].(*int), args["chain"].(*int), args["asset"].(*string), args["token"].(*string), args["return"].(*string)), true
+		return e.complexity.Query.Yields(childComplexity, args["date"].(*int), args["chain"].(*int), args["asset"].(*string), args["token"].(*string), args["return"].(*string), args["page"].(int), args["size"].(int)), true
 
 	case "Transaction.amount":
 		if e.complexity.Transaction.Amount == nil {
@@ -327,6 +345,16 @@ func (ec *executionContext) field_Query_yields_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["return"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "size", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["size"] = arg6
 	return args, nil
 }
 
@@ -382,6 +410,64 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _PageResult_total(ctx context.Context, field graphql.CollectedField, obj *PageResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PageResult_total,
+		func(ctx context.Context) (any, error) {
+			return obj.Total, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PageResult_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PageResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PageResult_data(ctx context.Context, field graphql.CollectedField, obj *PageResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PageResult_data,
+		func(ctx context.Context) (any, error) {
+			return obj.Data, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PageResult_data(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PageResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_txns(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -431,10 +517,10 @@ func (ec *executionContext) _Query_yields(ctx context.Context, field graphql.Col
 		ec.fieldContext_Query_yields,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Yields(ctx, fc.Args["date"].(*int), fc.Args["chain"].(*int), fc.Args["asset"].(*string), fc.Args["token"].(*string), fc.Args["return"].(*string))
+			return ec.resolvers.Query().Yields(ctx, fc.Args["date"].(*int), fc.Args["chain"].(*int), fc.Args["asset"].(*string), fc.Args["token"].(*string), fc.Args["return"].(*string), fc.Args["page"].(int), fc.Args["size"].(int))
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalNPageResult2ᚖgithubᚗcomᚋQueryᚑWeb3ᚋbackendᚋgqlᚐPageResult,
 		true,
 		true,
 	)
@@ -447,7 +533,13 @@ func (ec *executionContext) fieldContext_Query_yields(ctx context.Context, field
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_PageResult_total(ctx, field)
+			case "data":
+				return ec.fieldContext_PageResult_data(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageResult", field.Name)
 		},
 	}
 	defer func() {
@@ -2200,6 +2292,50 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** object.gotpl ****************************
 
+var pageResultImplementors = []string{"PageResult"}
+
+func (ec *executionContext) _PageResult(ctx context.Context, sel ast.SelectionSet, obj *PageResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pageResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PageResult")
+		case "total":
+			out.Values[i] = ec._PageResult_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "data":
+			out.Values[i] = ec._PageResult_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2773,6 +2909,20 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNPageResult2githubᚗcomᚋQueryᚑWeb3ᚋbackendᚋgqlᚐPageResult(ctx context.Context, sel ast.SelectionSet, v PageResult) graphql.Marshaler {
+	return ec._PageResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPageResult2ᚖgithubᚗcomᚋQueryᚑWeb3ᚋbackendᚋgqlᚐPageResult(ctx context.Context, sel ast.SelectionSet, v *PageResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PageResult(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {

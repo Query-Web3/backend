@@ -6,23 +6,28 @@ import (
 	"github.com/Query-Web3/backend/model/dbgen"
 )
 
-func Yields() (string, error) {
-	list := []dbgen.MultipleYield{}
-	result := DB.Find(&list)
+func Yields(page, size int) (string, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 10
+	}
+	list := []dbgen.FullTable{}
+	result := DB.Limit(size).Offset((page - 1) * size).Find(&list)
 	if result.Error != nil {
-		return "", result.Error
+		return "", 0, result.Error
+	}
+
+	var count int64
+	result = DB.Model(&dbgen.FullTable{}).Count(&count)
+	if result.Error != nil {
+		return "", 0, result.Error
 	}
 
 	jsonStr, err := json.Marshal(list)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
-	return string(jsonStr), nil
-}
-
-type YieldItem struct {
-	Token string  `json:"token"`
-	Apy   float64 `json:"apy"`
-	Tvl   float64 `json:"tvl"`
-	Price float64 `json:"price"`
+	return string(jsonStr), count, nil
 }

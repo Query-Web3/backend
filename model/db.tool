@@ -9,6 +9,6 @@ database:
   fieldNullable : true
   onlyModel : true
   tables :
-    - "multiple_yields"
+    - "full_table"
   fieldWithIndexTag : false
   fieldWithTypeTag  : false
