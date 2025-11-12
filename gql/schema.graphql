@@ -19,16 +19,18 @@ type PageResult {
 
 extend type Query {
     txns(
-        date: Int
-        chain: Int
+        date: String
+        chain: String
         asset: String
         token: String
         return: String
+        page: Int!
+        size: Int!
     ): String!
     
     yields(
-        date: Int
-        chain: Int
+        date: String
+        chain: String
         asset: String
         token: String
         return: String

@@ -10,5 +10,6 @@ database:
   onlyModel : true
   tables :
     - "full_table"
+    - "token_ext"
   fieldWithIndexTag : false
   fieldWithTypeTag  : false

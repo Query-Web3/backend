@@ -52,8 +52,8 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Txns   func(childComplexity int, date *int, chain *int, asset *string, token *string, returnArg *string) int
-		Yields func(childComplexity int, date *int, chain *int, asset *string, token *string, returnArg *string, page int, size int) int
+		Txns   func(childComplexity int, date *string, chain *string, asset *string, token *string, returnArg *string, page int, size int) int
+		Yields func(childComplexity int, date *string, chain *string, asset *string, token *string, returnArg *string, page int, size int) int
 	}
 
 	Transaction struct {
@@ -70,8 +70,8 @@ type ComplexityRoot struct {
 }
 
 type QueryResolver interface {
-	Txns(ctx context.Context, date *int, chain *int, asset *string, token *string, returnArg *string) (string, error)
-	Yields(ctx context.Context, date *int, chain *int, asset *string, token *string, returnArg *string, page int, size int) (*PageResult, error)
+	Txns(ctx context.Context, date *string, chain *string, asset *string, token *string, returnArg *string, page int, size int) (string, error)
+	Yields(ctx context.Context, date *string, chain *string, asset *string, token *string, returnArg *string, page int, size int) (*PageResult, error)
 }
 
 type executableSchema struct {
@@ -116,7 +116,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Txns(childComplexity, args["date"].(*int), args["chain"].(*int), args["asset"].(*string), args["token"].(*string), args["return"].(*string)), true
+		return e.complexity.Query.Txns(childComplexity, args["date"].(*string), args["chain"].(*string), args["asset"].(*string), args["token"].(*string), args["return"].(*string), args["page"].(int), args["size"].(int)), true
 	case "Query.yields":
 		if e.complexity.Query.Yields == nil {
 			break
@@ -127,7 +127,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Yields(childComplexity, args["date"].(*int), args["chain"].(*int), args["asset"].(*string), args["token"].(*string), args["return"].(*string), args["page"].(int), args["size"].(int)), true
+		return e.complexity.Query.Yields(childComplexity, args["date"].(*string), args["chain"].(*string), args["asset"].(*string), args["token"].(*string), args["return"].(*string), args["page"].(int), args["size"].(int)), true
 
 	case "Transaction.amount":
 		if e.complexity.Transaction.Amount == nil {
@@ -289,12 +289,12 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_Query_txns_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "date", ec.unmarshalOInt2ᚖint)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "date", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
 	args["date"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "chain", ec.unmarshalOInt2ᚖint)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "chain", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
@@ -314,18 +314,28 @@ func (ec *executionContext) field_Query_txns_args(ctx context.Context, rawArgs m
 		return nil, err
 	}
 	args["return"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "size", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["size"] = arg6
 	return args, nil
 }
 
 func (ec *executionContext) field_Query_yields_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "date", ec.unmarshalOInt2ᚖint)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "date", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
 	args["date"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "chain", ec.unmarshalOInt2ᚖint)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "chain", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
@@ -476,7 +486,7 @@ func (ec *executionContext) _Query_txns(ctx context.Context, field graphql.Colle
 		ec.fieldContext_Query_txns,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Txns(ctx, fc.Args["date"].(*int), fc.Args["chain"].(*int), fc.Args["asset"].(*string), fc.Args["token"].(*string), fc.Args["return"].(*string))
+			return ec.resolvers.Query().Txns(ctx, fc.Args["date"].(*string), fc.Args["chain"].(*string), fc.Args["asset"].(*string), fc.Args["token"].(*string), fc.Args["return"].(*string), fc.Args["page"].(int), fc.Args["size"].(int))
 		},
 		nil,
 		ec.marshalNString2string,
@@ -517,7 +527,7 @@ func (ec *executionContext) _Query_yields(ctx context.Context, field graphql.Col
 		ec.fieldContext_Query_yields,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Yields(ctx, fc.Args["date"].(*int), fc.Args["chain"].(*int), fc.Args["asset"].(*string), fc.Args["token"].(*string), fc.Args["return"].(*string), fc.Args["page"].(int), fc.Args["size"].(int))
+			return ec.resolvers.Query().Yields(ctx, fc.Args["date"].(*string), fc.Args["chain"].(*string), fc.Args["asset"].(*string), fc.Args["token"].(*string), fc.Args["return"].(*string), fc.Args["page"].(int), fc.Args["size"].(int))
 		},
 		nil,
 		ec.marshalNPageResult2ᚖgithubᚗcomᚋQueryᚑWeb3ᚋbackendᚋgqlᚐPageResult,
@@ -3237,24 +3247,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v any) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	_ = sel
-	_ = ctx
-	res := graphql.MarshalInt(*v)
 	return res
 }
 

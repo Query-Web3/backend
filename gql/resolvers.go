@@ -25,12 +25,12 @@ func (r *Resolver) Query() QueryResolver {
 
 type queryResolver struct{ *Resolver }
 
-func (r *queryResolver) Txns(ctx context.Context, date *int, chain *int, asset *string, token *string, returnType *string) (string, error) {
+func (r *queryResolver) Txns(ctx context.Context, date *string, chain *string, asset *string, token *string, returnType *string, page int, size int) (string, error) {
 	return "[]", nil
 }
 
-func (r *queryResolver) Yields(ctx context.Context, date *int, chain *int, asset *string, token *string, returnType *string, page int, size int) (*PageResult, error) {
-	data, total, err := model.Yields(page, size)
+func (r *queryResolver) Yields(ctx context.Context, date *string, chain *string, asset *string, token *string, returnType *string, page int, size int) (*PageResult, error) {
+	data, total, err := model.Yields(date, chain, asset, token, returnType, page, size)
 	if err != nil {
 		return nil, gqlerror.Errorf("Failed to get yields: %v", err)
 	}
