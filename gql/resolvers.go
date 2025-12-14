@@ -11,14 +11,6 @@ import (
 
 type Resolver struct{}
 
-// func (r *Resolver) Customer() CustomerResolver {
-// 	return &customerResolver{r}
-// }
-
-// func (r *Resolver) Order() OrderResolver {
-// 	return &orderResolver{r}
-// }
-
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }

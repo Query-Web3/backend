@@ -10,7 +10,7 @@ ADD server /app/server
 # ADD gql model server go.mod go.sum /app/
 ADD go.mod go.sum /app/
 
-# 下载依赖（使用代理加速国内下载）
+# 下载依赖
 RUN go mod download && go mod verify
 
 # 构建 Go 应用

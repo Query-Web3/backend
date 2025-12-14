@@ -1,0 +1,60 @@
+# 定义数据卷
+volumes:
+  mysql-data:
+    driver: local
+
+services:
+  # db of app
+  mysql:
+    image: mysql
+    container_name: wquery3-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456  # root 密码（必填，建议强密码）
+      MYSQL_DATABASE: dev  # 初始化自动创建的数据库
+      MYSQL_USER: dev  # 自定义应用用户（非 root，更安全）
+      MYSQL_PASSWORD: 123456  # 应用用户密码
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4  # 字符集（支持emoji）
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci  # 排序规则
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # data
+  database:
+    image: wetee/query_web3_database:2025-12-13-14_10
+    container_name: wquery3-database
+    entrypoint: ["/bin/bash", "-c", "python CAO/all_data_jobs.py"]
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # graphql api
+  api:
+    image: wetee/query_web3_backend:2025-12-12-20_22
+    container_name: wquery3-api
+    restart: always
+    environment:
+      DB_DSN: dev:123456@tcp(mysql:3306)/dev?charset=utf8mb4&parseTime=True&loc=Local
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ui
+  ui:
+    image: wetee/query_web3_ui:main.20251214-11_04_51
+    container_name: wquery3-ui
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
