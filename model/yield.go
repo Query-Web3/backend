@@ -5,14 +5,6 @@ import (
 	"time"
 )
 
-// CREATE TABLE token_ext (
-//     chain VARCHAR(32) NOT NULL COMMENT 'Chain Name',
-//     token VARCHAR(255) NOT NULL COMMENT 'Primary Key',
-//     type VARCHAR(50) COMMENT 'Asset Type',
-//     return_type VARCHAR(50) COMMENT 'Return Type',
-//     PRIMARY KEY (chain, token)
-// ) COMMENT 'Table to store extended token information';
-
 func Yields(date *string, chain *string, asset *string, token *string, returnType *string, page, size int) (string, int64, error) {
 	if page < 1 {
 		page = 1
