@@ -1,0 +1,27 @@
+# 定义数据卷
+volumes:
+  mysql-data:
+    driver: local
+
+services:
+  # db of app
+  mysql:
+    image: mysql
+    container_name: wquery3-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456  # root 密码（必填，建议强密码）
+      MYSQL_DATABASE: dev  # 初始化自动创建的数据库
+      MYSQL_USER: dev  # 自定义应用用户（非 root，更安全）
+      MYSQL_PASSWORD: 123456  # 应用用户密码
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4  # 字符集（支持emoji）
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci  # 排序规则
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
