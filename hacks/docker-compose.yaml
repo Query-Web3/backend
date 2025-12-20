@@ -1,60 +1,194 @@
-# 定义数据卷
+# =============================================================================
+# Web3Query Docker Compose Configuration File
+# Web3Query Docker Compose 配置文件
+# =============================================================================
+# 
+# This configuration file defines the complete service stack for Web3Query project:
+# 本配置文件定义了 Web3Query 项目的完整服务栈，包括：
+# 1. MySQL Database Service - Stores application data
+#    1. MySQL 数据库服务 - 存储应用数据
+# 2. Database Processing Service - Executes data collection and processing tasks
+#    2. Database 数据处理服务 - 执行数据采集和处理任务
+# 3. API Backend Service - Provides GraphQL API interface
+#    3. API 后端服务 - 提供 GraphQL API 接口
+# 4. UI Frontend Service - Provides user interface
+#    4. UI 前端服务 - 提供用户界面
+#
+# Usage / 使用方法：
+#   - Start all services / 启动所有服务: docker-compose up -d
+#   - Stop all services / 停止所有服务: docker-compose down
+#   - Check service status / 查看服务状态: docker-compose ps
+#   - View logs / 查看日志: docker-compose logs -f [service_name]
+#   - Restart service / 重启服务: docker-compose restart [service_name]
+#
+# Service Dependencies / 服务依赖关系：
+#   - database and api services depend on mysql service health check
+#     database 和 api 服务依赖于 mysql 服务的健康检查
+#   - Other services will start only after mysql service is fully started
+#     确保 mysql 服务完全启动后，其他服务才会启动
+#
+# Port Mappings / 端口映射：
+#   - MySQL: 3306 (host) -> 3306 (container)
+#     MySQL: 3306 (主机) -> 3306 (容器)
+#   - API: 8082 (host) -> 8082 (container)
+#     API: 8082 (主机) -> 8082 (容器)
+#   - UI: 80 (host) -> 80 (container)
+#     UI: 80 (主机) -> 80 (容器)
+#
+# =============================================================================
+
+# =============================================================================
+# Volume Definitions / 数据卷定义
+# =============================================================================
+# Define persistent storage volumes for MySQL data
+# 定义持久化存储卷，用于保存 MySQL 数据，确保数据在容器重启后不丢失
+# Ensures data persistence across container restarts
 volumes:
   mysql-data:
-    driver: local
+    driver: local  # Use local driver for data storage / 使用本地驱动存储数据
 
+# =============================================================================
+# Service Definitions / 服务定义
+# =============================================================================
 services:
-  # db of app
+  # ---------------------------------------------------------------------------
+  # MySQL Database Service / MySQL 数据库服务
+  # ---------------------------------------------------------------------------
+  # Provides relational database storage for the application
+  # 提供应用所需的关系型数据库存储
+  # Uses official MySQL image with UTF8MB4 charset to support emoji and special characters
+  # 使用官方 MySQL 镜像，配置了 UTF8MB4 字符集以支持 emoji 等特殊字符
   mysql:
-    image: mysql
-    container_name: wquery3-db
-    restart: always
+    image: mysql  # Use official MySQL image (latest version) / 使用官方 MySQL 镜像（最新版本）
+    container_name: wquery3-db  # Container name for easy identification and management / 容器名称，便于识别和管理
+    restart: always  # Automatically restart container when it exits / 容器退出时自动重启
+    
+    # Database Environment Variables / 数据库环境变量配置
     environment:
-      MYSQL_ROOT_PASSWORD: root123456  # root 密码（必填，建议强密码）
-      MYSQL_DATABASE: dev  # 初始化自动创建的数据库
-      MYSQL_USER: dev  # 自定义应用用户（非 root，更安全）
-      MYSQL_PASSWORD: 123456  # 应用用户密码
-      MYSQL_CHARACTER_SET_SERVER: utf8mb4  # 字符集（支持emoji）
-      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci  # 排序规则
+      # Root user password (use strong password in production)
+      # Root 用户密码（生产环境请使用强密码）
+      MYSQL_ROOT_PASSWORD: root123456
+      
+      # Database name to be created automatically on initialization
+      # 初始化时自动创建的数据库名称
+      MYSQL_DATABASE: dev
+      
+      # Create application-specific user (non-root, improves security)
+      # 创建应用专用用户（非 root，提高安全性）
+      MYSQL_USER: dev
+      
+      # Application user password
+      # 应用用户密码
+      MYSQL_PASSWORD: 123456
+      
+      # Server character set: utf8mb4 supports full UTF-8 encoding including emoji
+      # 服务器字符集：utf8mb4 支持完整的 UTF-8 编码，包括 emoji
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      
+      # Collation: utf8mb4_unicode_ci provides better multilingual support
+      # 排序规则：utf8mb4_unicode_ci 提供更好的多语言支持
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    
+    # Port mapping: map container port 3306 to host port 3306
+    # 端口映射：将容器的 3306 端口映射到主机的 3306 端口
+    # Format: host_port:container_port / 格式：主机端口:容器端口
     ports:
       - "3306:3306"
+    
+    # Volume mount: mount MySQL data directory to persistent volume
+    # 数据卷挂载：将 MySQL 数据目录挂载到持久化卷
+    # Ensures data persists even after container deletion
+    # 确保数据在容器删除后仍然保留
     volumes:
       - mysql-data:/var/lib/mysql
+    
+    # Health Check Configuration / 健康检查配置
+    # Ensures MySQL service is fully started before dependent services start
+    # 用于确保 MySQL 服务完全启动后再启动依赖服务
     healthcheck:
+      # Health check command: use mysqladmin ping to check if database is ready
+      # 健康检查命令：使用 mysqladmin ping 检查数据库是否就绪
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      interval: 5s      # Check every 5 seconds / 每 5 秒检查一次
+      timeout: 5s       # Timeout for each check is 5 seconds / 每次检查超时时间为 5 秒
+      retries: 10       # Retry 10 times after failure (wait up to 50 seconds) / 失败后重试 10 次（最多等待 50 秒）
 
-  # data
+  # ---------------------------------------------------------------------------
+  # Data Processing Service / 数据处理服务
+  # ---------------------------------------------------------------------------
+  # Responsible for executing data collection and processing tasks
+  # 负责执行数据采集和处理任务（CAO - 可能是 Chain Analysis Operations）
+  # Collects data from blockchain networks and stores it in MySQL database
+  # 从区块链网络采集数据并存储到 MySQL 数据库
   database:
-    image: wetee/query_web3_database:2025-12-13-14_10
-    container_name: wquery3-database
+    image: wetee/query_web3_database:2025-12-20-17_22  # Custom data processing image / 自定义数据处理镜像
+    container_name: wquery3-database  # Container name / 容器名称
+    # Command executed when container starts: run Python data processing script
+    # 容器启动时执行的命令：运行 Python 数据处理脚本
     entrypoint: ["/bin/bash", "-c", "python CAO/all_data_jobs.py"]
-    restart: always
+    restart: always  # Automatically restart container when it exits / 容器退出时自动重启
+    
+    # Service dependency: wait for MySQL service health check to pass before starting
+    # 服务依赖：等待 MySQL 服务健康检查通过后再启动
     depends_on:
       mysql:
-        condition: service_healthy
+        condition: service_healthy  # Start only after MySQL health check passes / 仅在 MySQL 健康检查通过后启动
 
-  # graphql api
+  # ---------------------------------------------------------------------------
+  # GraphQL API Backend Service / GraphQL API 后端服务
+  # ---------------------------------------------------------------------------
+  # Provides GraphQL API interface for frontend and other clients to call
+  # 提供 GraphQL API 接口，供前端和其他客户端调用
+  # Handles business logic, queries and manipulates data in the database
+  # 处理业务逻辑，查询和操作数据库中的数据
   api:
-    image: wetee/query_web3_backend:2025-12-12-20_22
-    container_name: wquery3-api
-    restart: always
+    image: wetee/query_web3_backend:2025-12-20-17_21  # Custom backend API image / 自定义后端 API 镜像
+    container_name: wquery3-api  # Container name / 容器名称
+    restart: always  # Automatically restart container when it exits / 容器退出时自动重启
+    
+    # Environment Variables / 环境变量配置
     environment:
+      # Database connection string (DSN - Data Source Name)
+      # 数据库连接字符串（DSN - Data Source Name）
+      # Format: username:password@tcp(host:port)/database?parameters
+      # 格式：用户名:密码@tcp(主机:端口)/数据库名?参数
+      # - dev:123456 - username and password / 用户名和密码
+      # - mysql:3306 - MySQL service hostname and port (using Docker internal network)
+      #   MySQL 服务的主机名和端口（使用 Docker 内部网络）
+      # - /dev - database name / 数据库名称
+      # - charset=utf8mb4 - character set / 字符集
+      # - parseTime=True - parse time fields / 解析时间字段
+      # - loc=Local - timezone setting / 时区设置
       DB_DSN: dev:123456@tcp(mysql:3306)/dev?charset=utf8mb4&parseTime=True&loc=Local
+    
+    # Port mapping: map container port 8082 to host port 8082
+    # 端口映射：将容器的 8082 端口映射到主机的 8082 端口
+    # API service can be accessed at http://localhost:8082
+    # API 服务可通过 http://localhost:8082 访问
     ports:
       - "8082:8082"
+    
+    # Service dependency: wait for MySQL service health check to pass before starting
+    # 服务依赖：等待 MySQL 服务健康检查通过后再启动
     depends_on:
       mysql:
-        condition: service_healthy
+        condition: service_healthy  # Start only after MySQL health check passes / 仅在 MySQL 健康检查通过后启动
 
-  # ui
+  # ---------------------------------------------------------------------------
+  # Frontend UI Service / 前端 UI 服务
+  # ---------------------------------------------------------------------------
+  # Provides web user interface for users to access the application via browser
+  # 提供 Web 用户界面，用户通过浏览器访问应用
+  # Usually a static website or Single Page Application (SPA)
+  # 通常是一个静态网站或单页应用（SPA）
   ui:
-    image: wetee/query_web3_ui:main.20251214-11_04_51
-    container_name: wquery3-ui
-    restart: always
+    image: wetee/query_web3_ui:main.20251213-20_56_58  # Custom frontend UI image / 自定义前端 UI 镜像
+    container_name: wquery3-ui  # Container name / 容器名称
+    restart: always  # Automatically restart container when it exits / 容器退出时自动重启
+    
+    # Port mapping: map container port 80 to host port 80
+    # 端口映射：将容器的 80 端口映射到主机的 80 端口
+    # UI service can be accessed at http://localhost (default HTTP port)
+    # UI 服务可通过 http://localhost 访问（默认 HTTP 端口）
     ports:
-      - "8080:80"
-    depends_on:
-      - api
+      - "80:80"
