@@ -142,7 +142,7 @@ services:
   # Handles business logic, queries and manipulates data in the database
   # 处理业务逻辑，查询和操作数据库中的数据
   api:
-    image: wetee/query_web3_backend:2025-12-23-12_27  # Custom backend API image / 自定义后端 API 镜像
+    image: wetee/query_web3_backend:2025-12-23-12_56  # Custom backend API image / 自定义后端 API 镜像
     container_name: wquery3-api  # Container name / 容器名称
     restart: always  # Automatically restart container when it exits / 容器退出时自动重启
     

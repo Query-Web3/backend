@@ -78,7 +78,7 @@ func Yields(date *string, chain *string, asset *string, token *string, returnTyp
 	// })
 	// fmt.Println(t)
 
-	rows, err := QDB.Limit(size).Offset((page - 1) * size).Rows()
+	rows, err := QDB.Limit(size).Order("apy DESC").Offset((page - 1) * size).Rows()
 	if err != nil {
 		return "", 0, err
 	}
