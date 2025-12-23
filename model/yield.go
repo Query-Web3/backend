@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -24,14 +25,12 @@ func Yields(date *string, chain *string, asset *string, token *string, returnTyp
 
 		sub := `
 			INNER JOIN (
-				SELECT chain, symbol, MAX(created_at) AS max_created_at
+				SELECT MAX(id) as mid, chain, symbol, MAX(created_at) AS max_created_at
 				FROM full_table
 				WHERE created_at >= ? AND created_at <= ?
 				GROUP BY chain, symbol
 			) AS sub 
-			ON full_table.chain = sub.chain 
-			AND full_table.symbol = sub.symbol
-			AND full_table.created_at = sub.max_created_at
+			ON full_table.id = sub.mid
 		`
 
 		QDB = QDB.InnerJoins(sub, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"))
@@ -39,13 +38,11 @@ func Yields(date *string, chain *string, asset *string, token *string, returnTyp
 	} else {
 		sub := `
 			INNER JOIN (
-				SELECT chain, symbol->'$.symbol' as symbol, MAX(created_at) AS max_created_at
+				SELECT MAX(id) as mid, chain, symbol->'$.symbol' as symbol, MAX(created_at) AS max_created_at
 				FROM full_table
 				GROUP BY chain, symbol->'$.symbol'
 			) AS sub 
-			ON full_table.chain = sub.chain 
-			AND full_table.symbol->'$.symbol' = sub.symbol 
-			AND full_table.created_at = sub.max_created_at
+			ON full_table.id = sub.mid
 		`
 		QDB = QDB.InnerJoins(sub)
 		CDB = CDB.InnerJoins(sub)
@@ -67,14 +64,19 @@ func Yields(date *string, chain *string, asset *string, token *string, returnTyp
 	}
 
 	if token != nil && *token != "" {
-		QDB = QDB.Where("full_table.symbol->'$.symbol' LIKE CONCAT('%', ?, '%')", *token)
-		CDB = CDB.Where("full_table.symbol->'$.symbol' LIKE CONCAT('%', ?, '%')", *token)
+		QDB = QDB.Where("LOWER(full_table.symbol->'$.symbol') LIKE CONCAT('%', ?, '%')", strings.ToLower(*token))
+		CDB = CDB.Where("LOWER(full_table.symbol->'$.symbol') LIKE CONCAT('%', ?, '%')", strings.ToLower(*token))
 	}
 
 	QDB = QDB.
 		Joins("left join token_ext on full_table.symbol->'$.symbol'  = token_ext.token AND full_table.chain = token_ext.chain")
 	CDB = CDB.
 		Joins("left join token_ext on full_table.symbol->'$.symbol'  = token_ext.token AND full_table.chain = token_ext.chain")
+
+	// t := QDB.ToSQL(func(tx *gorm.DB) *gorm.DB {
+	// 	return tx.Limit(10).Offset(5).Find([]FullTable{})
+	// })
+	// fmt.Println(t)
 
 	rows, err := QDB.Limit(size).Offset((page - 1) * size).Rows()
 	if err != nil {

@@ -142,7 +142,7 @@ services:
   # Handles business logic, queries and manipulates data in the database
   # 处理业务逻辑，查询和操作数据库中的数据
   api:
-    image: wetee/query_web3_backend:2025-12-20-17_21  # Custom backend API image / 自定义后端 API 镜像
+    image: wetee/query_web3_backend:2025-12-23-12_27  # Custom backend API image / 自定义后端 API 镜像
     container_name: wquery3-api  # Container name / 容器名称
     restart: always  # Automatically restart container when it exits / 容器退出时自动重启
     
@@ -182,13 +182,15 @@ services:
   # Usually a static website or Single Page Application (SPA)
   # 通常是一个静态网站或单页应用（SPA）
   ui:
-    image: wetee/query_web3_ui:main.20251213-20_56_58  # Custom frontend UI image / 自定义前端 UI 镜像
+    image: wetee/query_web3_ui:main.20251221-21_53_31  # Custom frontend UI image / 自定义前端 UI 镜像
     container_name: wquery3-ui  # Container name / 容器名称
     restart: always  # Automatically restart container when it exits / 容器退出时自动重启
-    
+    volumes:
+      - ./cert:/srv
     # Port mapping: map container port 80 to host port 80
     # 端口映射：将容器的 80 端口映射到主机的 80 端口
     # UI service can be accessed at http://localhost (default HTTP port)
     # UI 服务可通过 http://localhost 访问（默认 HTTP 端口）
     ports:
       - "80:80"
+      - "443:443"
